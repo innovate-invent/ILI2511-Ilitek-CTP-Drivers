@@ -22,9 +22,10 @@ can it support an active pen?
     command to protocol **3.4.0 and later**.
   - Its HID descriptor declares a **finger-only** touch screen with no pen
     collection.
-- **Active pen support would need different firmware from ILITEK.** None is
-  publicly available. There is also no evidence the ILI2511 supports an active
-  pen at all.
+- **ILITEK has confirmed the ILI2511 does not support an active stylus.**
+  No firmware update can add one, so active pen input needs a monitor with a
+  different digitizer. A passive capacitive stylus works as a finger. See
+  [Conclusion](#conclusion-ilitek-confirmation).
 
 ---
 
@@ -38,9 +39,10 @@ can it support an active pen?
 6. [Contacts and next steps](#6-contacts-and-next-steps)
 7. [External resources](#7-external-resources)
 8. [Files on this branch](#8-files-on-this-branch)
-9. [Appendix A: ILITEK USB command channel](#appendix-a-ilitek-usb-command-channel)
-10. [Appendix B: HID report descriptor decode](#appendix-b-hid-report-descriptor-decode)
-11. [Appendix C: draft email to ILITEK](#appendix-c-draft-email-to-ilitek)
+9. [Conclusion: ILITEK confirmation](#conclusion-ilitek-confirmation)
+10. [Appendix A: ILITEK USB command channel](#appendix-a-ilitek-usb-command-channel)
+11. [Appendix B: HID report descriptor decode](#appendix-b-hid-report-descriptor-decode)
+12. [Appendix C: email sent to ILITEK](#appendix-c-email-sent-to-ilitek)
 
 ---
 
@@ -192,6 +194,10 @@ The 743-byte report descriptor ([`data/`](data/), decoded in
 
 ### 3.2 Conclusions
 
+- **Confirmed by ILITEK: the ILI2511 does not support an active stylus.** This
+  answer came from ILITEK's sales director in reply to the email in
+  [Appendix C](#appendix-c-email-sent-to-ilitek). It overrides the open
+  questions below about firmware and modes.
 - **With this firmware, an active stylus can only appear as a finger.** That is
   if the sensor detects it at all. There is no hover, pressure or button
   support.
@@ -230,6 +236,9 @@ The 743-byte report descriptor ([`data/`](data/), decoded in
   - `ili210x`'s `firmware_update` only works over I2C.
   - A hidraw-based userspace tool could be written from the programming guide,
     but it hasn't been, and it would be untested.
+- **No firmware can add active pen support.** ILITEK has confirmed the chip
+  does not support an active stylus (see [Conclusion](#conclusion-ilitek-confirmation)).
+  Updating the firmware is not a route to pen input.
 - **No firmware image is publicly available**, at 3.4.0+ or any other
   version.
   - ILITEK doesn't publish ILI2511 images.
@@ -267,9 +276,9 @@ ILITEK ILI2511 chip. All three are running default or template firmware.
 
 | Contact | Detail | Source |
 |---|---|---|
-| Bert Chang, Product/Sales Manager | `bert_chang@ilitek.com` | 2023 press release (Andes / GlobeNewswire) |
-| ILITEK head office (current) | 10F., No. 1, Sec. 3, Gongdao 5th Rd., East Dist., Hsinchu City 300042, Taiwan. Tel +886-3-5726533 | same press release |
-| ILITEK head office (older) | 10F, No. 1, Taiyuan 2nd St., Zhubei City, Hsinchu County 302, Taiwan. Tel +886-3-5600099 | programming guide and iUniTouch guide on `main` |
+| Bert Chang, Marketing / Sales Director | `bert_chang@ilitek.com`, Tel +886-3-5600099 ext 8269 | 2023 press release (Andes / GlobeNewswire); title and extension from his reply |
+| ILITEK office (Zhubei) | 8F., No. 1, Taiyuan 2nd St., Zhubei City, Hsinchu County 302, Taiwan. Tel +886-3-5600099 | Bert Chang's email signature (the guides on `main` give 10F at the same address) |
+| ILITEK office (Hsinchu City) | 10F., No. 1, Sec. 3, Gongdao 5th Rd., East Dist., Hsinchu City 300042, Taiwan. Tel +886-3-5726533 | 2023 press release |
 | Luca Hsu (author of the vendor driver) | `luca_hsu@ilitek.com` | GPL headers in `ilitek_limv5_9_0_1` |
 | Joe Hung (author of the mainline `ilitek_ts_i2c.c`) | `joe_hung@ilitek.com` | GPL header in the kernel driver |
 | Distributor | WPG Holdings / Yosun lists ILITEK as a supplier | wpgholdings.com |
@@ -279,18 +288,16 @@ investigation.
 
 ### 6.2 Next steps
 
-1. **Read the panel sticker** to get the exact BOE part number, and the touch
-   flex-cable (FPC) marking.
-2. **Email ILITEK** using [Appendix C](#appendix-c-draft-email-to-ilitek).
-   Send a copy to the Shopee seller as well, asking who made the touch module
-   and whether a stylus is supported. Newhaven Display or WPG/Yosun are
-   alternative routes.
-3. **Test a passive capacitive stylus**, which should work as a finger today.
-4. **If pen-capable firmware is obtained:**
-   - Flash it with iUniTouch on Windows.
-   - Re-dump the HID descriptor on Linux.
-   - If a Pen collection appears, `hid-multitouch` should handle it with no
-     driver changes.
+ILITEK has answered (see [Conclusion](#conclusion-ilitek-confirmation)), so
+the firmware route is closed. What remains:
+
+1. **Use a passive capacitive stylus** for pen-like input on this monitor. It
+   acts as a finger. Check detection with `sudo libinput debug-events`; a
+   broader tip may register more reliably than a very fine one.
+2. **For pressure, hover or pen buttons, use a different monitor.** Choose one
+   whose digitizer names a pen standard (Wacom EMR or AES, MPP, or USI).
+3. **Optional:** read the panel sticker for the exact BOE part number. This is
+   only needed to identify the panel, not for pen support.
 
 ---
 
@@ -367,6 +374,34 @@ only send read-only queries.
 
 ---
 
+## Conclusion: ILITEK confirmation
+
+ILITEK replied to the email in [Appendix C](#appendix-c-email-sent-to-ilitek).
+Bert Chang, Marketing / Sales Director at ILI Technology Corp., wrote:
+
+> ILI2511 doesn't support Active Stylus.
+
+What this settles:
+
+- **The limit is the chip, not the software.** No driver (kernel or vendor),
+  firmware version or function mode will give this monitor active pen support.
+- **The earlier inferences were correct.** The finger-only HID descriptor, the
+  absence of pen reporting in the vendor driver, and the ILI2511's positioning
+  for POS, ATM and industrial use all pointed the same way.
+- **The remaining open questions no longer matter.** These were what modes
+  0, 1 and 2 do, whether protocol 3.4.0+ firmware exists for this module, and
+  the template physical size in the HID descriptor. None of them affects pen
+  support.
+- **Options for pen input:**
+  - A passive capacitive stylus works on this monitor as a finger, with no
+    pressure, hover or palm rejection.
+  - Pressure, hover and buttons need a monitor whose digitizer supports a pen
+    standard (Wacom EMR or AES, MPP, or USI). On Linux these normally appear as
+    a separate pen device that `hid-multitouch` or the Wacom driver handles
+    without changes.
+
+---
+
 ## Appendix A: ILITEK USB command channel
 
 From section 4.2 of the programming guide. The I2C commands are wrapped in
@@ -419,7 +454,10 @@ Usages present: `0001:30` (X), `0001:31` (Y), `000d:04` (Touch Screen),
 `000d:54` (Contact Count), `000d:55` (Contact Count Maximum), `000d:56`
 (Scan Time), `ff00:c5` (vendor blob).
 
-## Appendix C: draft email to ILITEK
+## Appendix C: email sent to ILITEK
+
+This is the email sent to ILITEK. The reply is quoted in the
+[Conclusion](#conclusion-ilitek-confirmation).
 
 > **To:** bert_chang@ilitek.com
 > **Cc:** luca_hsu@ilitek.com
